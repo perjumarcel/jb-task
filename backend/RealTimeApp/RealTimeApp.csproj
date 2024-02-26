@@ -18,8 +18,5 @@
 
 
 
-  <ItemGroup>
-    <Folder Include="DataProviders\" />
-  </ItemGroup>
 
 </Project>

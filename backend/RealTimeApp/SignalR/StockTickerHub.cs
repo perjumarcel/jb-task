@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
 using RealTimeApp.DataStreaming.Orchestrator;
-using RealTimeApp.Helpers;
 
 namespace RealTimeApp.SignalR;
 
