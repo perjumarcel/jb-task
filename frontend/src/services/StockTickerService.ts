@@ -1,4 +1,4 @@
-import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr";
+import { HubConnection, HubConnectionBuilder, HubConnectionState } from "@microsoft/signalr";
 
 const STOCK_TICKER_HUB_URL = 'http://localhost:5063/stockTickerHub'; // Ensure this matches your server configuration
 
@@ -24,7 +24,9 @@ export class StockTickerService {
     }
 
     async startConnection(): Promise<void> {
-        return this.connection.start().catch((error) => console.error('Connection failed: ', error));
+        if(this.connection.state !== HubConnectionState.Connecting && this.connection.state !== HubConnectionState.Connected) {
+            return this.connection.start().catch((error) => console.error('Connection failed: ', error));
+        }
     }
 
     async stopConnection(): Promise<void> {
@@ -52,6 +54,10 @@ export class StockTickerService {
     }
 
     async subscribeToUpdates(callback: SubscribeToUpdatesCallback): Promise<void> {
-        this.connection.on("ReceiveUpdates", callback);
+        this.connection.on("ReceiveUpdate", callback);
+    }
+
+    public getConnection(): HubConnection {
+        return this.connection;
     }
 }

@@ -1,6 +1,8 @@
 import React, { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { StockTickerService, SubscribeToUpdatesCallback } from "../services/StockTickerService";
 import { Symbol } from "../types/symbol";
+import { useHub } from "../hooks/useHub";
+import { HubConnectionState } from "@microsoft/signalr";
 
 interface TickerContextType {
     tickerService: StockTickerService;
@@ -24,22 +26,31 @@ export const useTicker = () => {
 export const TickerProvider = ({children}: TickerProviderProps) => {
     const [tickerService] = useState(StockTickerService.getInstance());
     const [symbols, setSymbols] = useState<Record<string, Symbol>>({});
+    const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+
     const subscribeCallback: SubscribeToUpdatesCallback = (updatedSymbol, value) => {
-        setSymbols(currentSymbols => ({
-            ...currentSymbols,
-            [updatedSymbol]: { name: updatedSymbol, value } as unknown as Symbol,
-        }));
+        setSymbols(currentSymbols => {
+            if(updatedSymbol in currentSymbols){
+                return {
+                    ...currentSymbols,
+                    [updatedSymbol]: { 
+                        ...currentSymbols[updatedSymbol],
+                        value: value
+                    }
+                }
+            }
+            return currentSymbols;
+        });
     };
 
-    useEffect(() => {
-        tickerService.startConnection().then(() => {
-            tickerService.subscribeToUpdates(subscribeCallback)
-        });
+    const { hubConnectionState } = useHub(tickerService.getConnection());
 
-        return () => {
-            tickerService.stopConnection();
-        };
-    }, [tickerService]);
+    useEffect(() => {
+        if(hubConnectionState === HubConnectionState.Connected && !isSubscribed) {
+            tickerService.subscribeToUpdates(subscribeCallback);
+            setIsSubscribed(true);
+        }
+    }, [hubConnectionState, tickerService])
 
     const contextValue = useMemo(() => ({ tickerService, symbols, setSymbols}), [tickerService, symbols, setSymbols]);
 

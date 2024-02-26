@@ -12,7 +12,7 @@ const SymbolGridRow : React.FC<SymbolGridRowProps> = ({ symbol }) => {
     return (
         <div className="grid-row">
         <div className="grid-item">{symbol.name}</div>
-        <div className="grid-item">{symbol.value.toFixed(2)}</div>
+        <div className="grid-item">{symbol.value?.toFixed(2)}</div>
         <div className="grid-item">
           <button onClick={() => removeSymbol(symbol.name)}>Close</button>
         </div>
