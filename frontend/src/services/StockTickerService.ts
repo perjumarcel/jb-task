@@ -30,7 +30,7 @@ export class StockTickerService {
     }
 
     async stopConnection(): Promise<void> {
-        if(this.connection) {
+        if(this.connection && (this.connection.state === HubConnectionState.Connecting || this.connection.state === HubConnectionState.Connected)) {
             return this.connection.stop();
         }
     }
@@ -55,9 +55,5 @@ export class StockTickerService {
 
     async subscribeToUpdates(callback: SubscribeToUpdatesCallback): Promise<void> {
         this.connection.on("ReceiveUpdate", callback);
-    }
-
-    public getConnection(): HubConnection {
-        return this.connection;
     }
 }

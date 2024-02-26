@@ -1,8 +1,6 @@
 import React, { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { StockTickerService, SubscribeToUpdatesCallback } from "../services/StockTickerService";
 import { Symbol } from "../types/symbol";
-import { useHub } from "../hooks/useHub";
-import { HubConnectionState } from "@microsoft/signalr";
 
 interface TickerContextType {
     tickerService: StockTickerService;
@@ -26,7 +24,6 @@ export const useTicker = () => {
 export const TickerProvider = ({children}: TickerProviderProps) => {
     const [tickerService] = useState(StockTickerService.getInstance());
     const [symbols, setSymbols] = useState<Record<string, Symbol>>({});
-    const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
 
     const subscribeCallback: SubscribeToUpdatesCallback = (updatedSymbol, value) => {
         setSymbols(currentSymbols => {
@@ -42,15 +39,15 @@ export const TickerProvider = ({children}: TickerProviderProps) => {
             return currentSymbols;
         });
     };
-
-    const { hubConnectionState } = useHub(tickerService.getConnection());
-
     useEffect(() => {
-        if(hubConnectionState === HubConnectionState.Connected && !isSubscribed) {
-            tickerService.subscribeToUpdates(subscribeCallback);
-            setIsSubscribed(true);
-        }
-    }, [hubConnectionState, tickerService])
+        tickerService.startConnection().then(() => {
+            tickerService.subscribeToUpdates(subscribeCallback)
+        });
+
+        return () => {
+            tickerService.stopConnection();
+        };
+    }, [tickerService]);
 
     const contextValue = useMemo(() => ({ tickerService, symbols, setSymbols}), [tickerService, symbols, setSymbols]);
 
