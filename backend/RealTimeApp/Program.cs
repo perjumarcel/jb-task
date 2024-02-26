@@ -1,3 +1,9 @@
+using Microsoft.AspNetCore.SignalR;
+using RealTimeApp.DataStreaming;
+using RealTimeApp.DataStreaming.Orchestrator;
+using RealTimeApp.Services;
+using RealTimeApp.SignalR;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -11,6 +17,15 @@ builder.Services.AddCors(options =>
     });
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
+
+builder.Services.AddSingleton<IPriceBroadcaster, PriceBroadcaster>(serviceProvider =>
+{
+    var hubContext = serviceProvider.GetRequiredService<IHubContext<StockTickerHub>>();
+    return new PriceBroadcaster(hubContext);
+});
+builder.Services.AddSingleton<ISymbolResolver, SymbolResolver>();
+builder.Services.AddSingleton<IDataProviderFactory, DataProviderFactory>();
+builder.Services.AddSingleton<IDataProviderOrchestrator, DataProviderOrchestrator>();
 
 var app
  = builder.Build();

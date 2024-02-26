@@ -24,13 +24,21 @@ export const useTicker = () => {
 export const TickerProvider = ({children}: TickerProviderProps) => {
     const [tickerService] = useState(StockTickerService.getInstance());
     const [symbols, setSymbols] = useState<Record<string, Symbol>>({});
-    const subscribeCallback: SubscribeToUpdatesCallback = (updatedSymbol, value) => {
-        setSymbols(currentSymbols => ({
-            ...currentSymbols,
-            [updatedSymbol]: { name: updatedSymbol, value } as unknown as Symbol,
-        }));
-    };
 
+    const subscribeCallback: SubscribeToUpdatesCallback = (updatedSymbol, value) => {
+        setSymbols(currentSymbols => {
+            if(updatedSymbol in currentSymbols){
+                return {
+                    ...currentSymbols,
+                    [updatedSymbol]: { 
+                        ...currentSymbols[updatedSymbol],
+                        value: value
+                    }
+                }
+            }
+            return currentSymbols;
+        });
+    };
     useEffect(() => {
         tickerService.startConnection().then(() => {
             tickerService.subscribeToUpdates(subscribeCallback)

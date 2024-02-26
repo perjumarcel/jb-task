@@ -1,17 +1,20 @@
 import { useCallback } from "react";
 import { useTicker } from "../context/TickerContext";
-import { Symbol } from "../types/symbol";
 
 export const useSymbolManager = () => {
     const { tickerService, symbols, setSymbols } = useTicker();
 
     const addSymbol = useCallback(async (symbol: string) => {
         await tickerService.subscribeSymbol(symbol);
-        setSymbols(prevSymbols => ({
-            ...prevSymbols,
-            [symbol]: { name: symbol, value: 0} as unknown as Symbol
-        }));
-
+        setSymbols(prevSymbols => {
+            if(!(symbol in prevSymbols)){
+                return {
+                    ...prevSymbols,
+                    [symbol]: { name: symbol, value: 0 }
+                }
+            }
+            return prevSymbols;
+        });
     }, [tickerService, setSymbols]);
 
     const removeSymbol = useCallback((symbolToRemove: string) => {
