@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { HubConnectionBuilder } from '@microsoft/signalr';
+import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
+
 import './App.css';
 
-function App() {
-  const [symbol, setSymbol] = useState('');
-  const [symbols, setSymbols] = useState([]);
-  const [connection, setConnection] = useState(null);
+interface Symbol {
+  name: string;
+  value: number;
+}
+
+const App: React.FC = () => {
+  const [symbol, setSymbol] = useState<string>('');
+  const [symbols, setSymbols] = useState<Symbol[]>([]);
+  const [connection, setConnection] = useState<HubConnection | null>(null);
 
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
@@ -16,7 +22,7 @@ function App() {
     newConnection.start()
       .then(() => {
         console.log('Connection started!');
-        newConnection.on("ReceiveUpdate", (updatedSymbol, value) => {
+        newConnection.on("ReceiveUpdate", (updatedSymbol: string, value: number) => {
           setSymbols(currentSymbols =>
             currentSymbols.map(sym => sym.name === updatedSymbol ? { ...sym, value } : sym)
           );
@@ -27,7 +33,9 @@ function App() {
     setConnection(newConnection);
 
     return () => {
-      newConnection.stop();
+      if(newConnection) {
+        newConnection.stop();
+      }
     };
   }, []);
 
@@ -41,7 +49,7 @@ function App() {
     }
   };
 
-  const removeSymbol = (symbolToRemove) => {
+  const removeSymbol = (symbolToRemove: string) => {
     setSymbols(symbols.filter(sym => sym.name !== symbolToRemove));
     if (connection) {
       connection.invoke("Unsubscribe", symbolToRemove)
