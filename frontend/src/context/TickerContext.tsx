@@ -3,57 +3,62 @@ import { StockTickerService, SubscribeToUpdatesCallback } from "../services/Stoc
 import { Symbol } from "../types/symbol";
 
 interface TickerContextType {
-    tickerService: StockTickerService;
-    symbols: Record<string, Symbol>;
-    setSymbols: React.Dispatch<React.SetStateAction<Record<string, Symbol>>>;
+  tickerService?: StockTickerService;
+  symbols: Record<string, Symbol>;
+  setSymbols: React.Dispatch<React.SetStateAction<Record<string, Symbol>>>;
 }
 
 interface TickerProviderProps {
-    children: ReactNode;
+  children: ReactNode;
 }
 
 const TickerContext = createContext<TickerContextType | null>(null);
 
 export const useTicker = () => {
-    const context = useContext(TickerContext);
-    if(!context) throw new Error('useTicker must be withing TickerProvider');
+  const context = useContext(TickerContext);
+  if (!context) throw new Error("useTicker must be withing TickerProvider");
 
-    return context;
+  return context;
 };
 
-export const TickerProvider = ({children}: TickerProviderProps) => {
-    const [tickerService] = useState(StockTickerService.getInstance());
-    const [symbols, setSymbols] = useState<Record<string, Symbol>>({});
+export const TickerProvider = ({ children }: TickerProviderProps) => {
+  const [tickerService, setTickerService] = useState<StockTickerService>();
+  const [symbols, setSymbols] = useState<Record<string, Symbol>>({});
 
-    const subscribeCallback: SubscribeToUpdatesCallback = (updatedSymbol, value) => {
-        setSymbols(currentSymbols => {
-            if(updatedSymbol in currentSymbols){
-                return {
-                    ...currentSymbols,
-                    [updatedSymbol]: { 
-                        ...currentSymbols[updatedSymbol],
-                        value: value
-                    }
-                }
-            }
-            return currentSymbols;
-        });
-    };
-    useEffect(() => {
-        tickerService.startConnection().then(() => {
-            tickerService.subscribeToUpdates(subscribeCallback)
-        });
-
-        return () => {
-            tickerService.stopConnection();
+  const subscribeCallback: SubscribeToUpdatesCallback = (updatedSymbol, value) => {
+    setSymbols((currentSymbols) => {
+      if (updatedSymbol in currentSymbols) {
+        return {
+          ...currentSymbols,
+          [updatedSymbol]: {
+            ...currentSymbols[updatedSymbol],
+            value: value,
+          },
         };
-    }, [tickerService]);
+      }
+      return currentSymbols;
+    });
+  };
 
-    const contextValue = useMemo(() => ({ tickerService, symbols, setSymbols}), [tickerService, symbols, setSymbols]);
+  useEffect(() => {
+    setTickerService(StockTickerService.getInstance());
+  }, []);
 
-    return (
-        <TickerContext.Provider value={contextValue}>
-            {children}
-        </TickerContext.Provider>
-    );
+  useEffect(() => {
+    if (tickerService) {
+      try {
+        tickerService.startConnection().then(() => {
+          tickerService.subscribeToUpdates(subscribeCallback);
+        });
+      } catch (error) {}
+    }
+
+    return () => {
+      tickerService?.stopConnection();
+    };
+  }, [tickerService]);
+
+  const contextValue = useMemo(() => ({ tickerService, symbols, setSymbols }), [tickerService, symbols, setSymbols]);
+
+  return <TickerContext.Provider value={contextValue}>{children}</TickerContext.Provider>;
 };

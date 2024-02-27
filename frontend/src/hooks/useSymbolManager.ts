@@ -5,23 +5,27 @@ export const useSymbolManager = () => {
     const { tickerService, symbols, setSymbols } = useTicker();
 
     const addSymbol = useCallback(async (symbol: string) => {
-        await tickerService.subscribeSymbol(symbol);
-        setSymbols(prevSymbols => {
-            if(!(symbol in prevSymbols)){
-                return {
-                    ...prevSymbols,
-                    [symbol]: { name: symbol, value: 0 }
+        if(tickerService) {
+            await tickerService.subscribeSymbol(symbol);
+            setSymbols(prevSymbols => {
+                if(!(symbol in prevSymbols)){
+                    return {
+                        ...prevSymbols,
+                        [symbol]: { name: symbol, value: 0 }
+                    }
                 }
-            }
-            return prevSymbols;
-        });
+                return prevSymbols;
+            });
+        }
     }, [tickerService, setSymbols]);
 
     const removeSymbol = useCallback((symbolToRemove: string) => {
-        const newSymbols = { ...symbols };
-        delete newSymbols[symbolToRemove];
-        setSymbols(newSymbols);
-        tickerService.unsubscribeSymbol(symbolToRemove);
+        if(tickerService) {
+            const newSymbols = { ...symbols };
+            delete newSymbols[symbolToRemove];
+            setSymbols(newSymbols);
+            tickerService?.unsubscribeSymbol(symbolToRemove);
+        }
     }, [tickerService, symbols, setSymbols]);
 
     return { addSymbol, removeSymbol };
